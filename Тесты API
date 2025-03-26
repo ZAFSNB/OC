@@ -1,0 +1,86 @@
+Оформление решения в виде REST сервиса
+Используя Flask, мы создадим REST API для выполнения этих задач.
+
+Flask API
+
+from flask import Flask, request, jsonify
+from factorial import factorials_up_to_n
+from remove_duplicates import remove_duplicates
+from linked_list import ListNode, reverse_linked_list, list_to_linked_list, linked_list_to_list
+
+app = Flask(__name__)
+
+@app.route('/factorials', methods=['POST'])
+def get_factorials():
+    try:
+        data = request.get_json()
+        n = data.get('n')
+        if not isinstance(n, int) or n < 1:
+            return jsonify({"error": "输入的数字必须是自然数。"}), 400
+        result = factorials_up_to_n(n)
+        return jsonify({"factorials": result}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/remove_duplicates', methods=['POST'])
+def remove_duplicates_api():
+    try:
+        data = request.get_json()
+        lst = data.get('list')
+        if not isinstance(lst, list):
+            return jsonify({"error": "输入参数必须是一个列表。"}), 400
+        result = remove_duplicates(lst)
+        return jsonify({"list_without_duplicates": result}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/reverse_linked_list', methods=['POST'])
+def reverse_linked_list_api():
+    try:
+        data = request.get_json()
+        values = data['values']
+        head = list_to_linked_list(values)
+        reversed_head = reverse_linked_list(head)
+        reversed_values = linked_list_to_list(reversed_head)
+        return jsonify({'reversed_values': reversed_values}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+
+
+
+Тестирование
+Теперь напишем тесты для каждого из API, используя unittest и requests.
+
+Тесты API
+
+import unittest
+import requests
+
+class TestAPI(unittest.TestCase):
+    def setUp(self):
+        self.base_url = 'http://127.0.0.1:5000/'
+
+    def test_factorials(self):
+        response = requests.post(self.base_url + 'factorials', json={'n': 5})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['factorials'], [1, 2, 6, 24, 120])
+
+    def test_remove_duplicates(self):
+        response = requests.post(self.base_url + 'remove_duplicates', json={'list': [1, 2, 3, 2, 1]})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['list_without_duplicates'], [1, 2, 3])
+
+    def test_reverse_linked_list(self):
+        response = requests.post(self.base_url + 'reverse_linked_list', json={'values': [1, 2, 3, 4, 5]})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['reversed_values'], [5, 4, 3, 2, 1])
+
+if __name__ == '__main__':
+    unittest.main()
+
